@@ -1,0 +1,12 @@
+{
+  "background_color": "#ffffff",
+  "dir": "ltr",
+  "display": "standalone",
+  "name": "文件处理工具pro",
+  "orientation": "any",
+  "scope": "/",
+  "short_name": "处理工具",
+  "start_url": "https://runhuahuang.github.io/FILEPROCESSOR/",
+  "theme_color": "#ffffff",
+  "lang": "zh"
+}
