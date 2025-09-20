@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>✨ 文件处理工具箱 Pro</title>
+    <!-- 引入图标库 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <!-- 引入必要的 JS 库 -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
+    <style>
+        :root {
+            --primary: #4338ca;
+            --primary-light: #6366f1;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --dark: #1f2937;
+            --gray: #6b7280;
+            --light: #f9fafb;
+            --border: #e5e7eb;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #e4e8eb 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: var(--dark);
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+        }
+
+        h1 {
+            font-size: 2.2rem;
+            font-weight: 700;
+            background: linear-gradient(90deg, var(--primary), var(--primary-light));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: var(--gray);
+            font-size: 1rem;
+        }
+
+        /* Tab 标签栏 */
+        .tabs {
+            display: flex;
+            background: white;
+            border-radius: 16px;
+            padding: 8px;
+            box-shadow: var(--shadow);
+            margin-bottom: 30px;
+            overflow: hidden;
+        }
+
+        .tab-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 14px 24px;
+            font-size: 1rem;
+            font-weight: 600;
+            border: none;
+            background: transparent;
+            color: var(--gray);
+            cursor: pointer;
+            border-radius: 12px;
+            transition: var(--transition);
+            flex: 1;
+            justify-content: center;
+        }
+
+        .tab-btn.active {
+            background: linear-gradient(90deg, var(--primary), var(--primary-light));
+            color: white;
+            box-shadow: 0 4px 12px rgba(67, 56, 202, 0.25);
+        }
+
+        .tab-btn:hover:not(.active) {
+            background-color: #f3f4f6;
+            color: var(--dark);
+        }
+
+        .tab-btn i {
+            font-size: 1.2rem;
+        }
+
+        /* 功能面板 */
+        .tab-content {
+            display: none;
+            background: white;
+            border-radius: 18px;
+            padding: 30px;
+            box-shadow: var(--shadow);
+            animation: fadeIn 0.5s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* 上传区域 */
+        .upload-area {
+            border: 2px dashed var(--primary-light);
+            padding: 50px 30px;
+            text-align: center;
+            border-radius: 16px;
+            background: linear-gradient(135deg, #f0f4ff 0%, #e6eaff 100%);
+            cursor: pointer;
+            transition: var(--transition);
+            margin: 25px 0;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .upload-area:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(67, 56, 202, 0.15);
+            background: linear-gradient(135deg, #e0e7ff 0%, #d1d9ff 100%);
+        }
+
+        .upload-area::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(67,56,202,0.1) 0%, transparent 70%);
+            animation: rotate 8s linear infinite;
+            pointer-events: none;
+        }
+
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .upload-icon {
+            font-size: 3rem;
+            color: var(--primary);
+            margin-bottom: 15px;
+        }
+
+        .upload-text {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: var(--dark);
+        }
+
+        .upload-subtext {
+            font-size: 0.9rem;
+            color: var(--gray);
+            margin-bottom: 20px;
+        }
+
+        .browse-btn {
+            background: linear-gradient(90deg, var(--primary), var(--primary-light));
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            font-size: 1rem;
+            font-weight: 600;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: var(--transition);
+            box-shadow: 0 4px 15px rgba(67, 56, 202, 0.3);
+        }
+
+        .browse-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(67, 56, 202, 0.4);
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        /* 文件列表 */
+        .file-list-container {
+            margin: 30px 0;
+            background: #f8fafc;
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid var(--border);
+        }
+
+        .file-list-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: var(--dark);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .file-list {
+            max-height: 200px;
+            overflow-y: auto;
+            padding-right: 5px;
+        }
+
+        .file-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.95rem;
+        }
+
+        .file-item:last-child {
+            border-bottom: none;
+        }
+
+        .file-icon {
+            color: var(--primary);
+            font-size: 1.1rem;
+        }
+
+        /* 操作按钮 */
+        .action-btn {
+            display: block;
+            width: 100%;
+            max-width: 300px;
+            margin: 30px auto;
+            padding: 16px 24px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: var(--transition);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            letter-spacing: 0.5px;
+        }
+
+        .action-btn:disabled {
+            background: #e5e7eb;
+            color: #9ca3af;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .merge-btn { background: linear-gradient(90deg, #7c3aed, #9333ea); color: white; }
+        .extract-btn { background: linear-gradient(90deg, #059669, #10b981); color: white; }
+        .convert-btn { background: linear-gradient(90deg, #d97706, #f59e0b); color: white; }
+
+        .action-btn:not(:disabled):hover {
+            transform: translateY(-3px);
+            box-shadow: 0 7px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        /* 状态提示 */
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 16px 24px;
+            border-radius: 12px;
+            color: white;
+            font-weight: 500;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            transform: translateX(150%);
+            transition: transform 0.3s ease, opacity 0.3s ease;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            max-width: 350px;
+        }
+
+        .toast.show {
+            transform: translateX(0);
+        }
+
+        .toast.success { background: #10b981; }
+        .toast.error { background: #ef4444; }
+        .toast.info { background: #3b82f6; }
+
+        .toast i {
+            font-size: 1.2rem;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .tabs {
+                flex-direction: column;
+                gap: 8px;
+                border-radius: 12px;
+            }
+
+            .tab-btn {
+                padding: 12px 16px;
+                font-size: 0.95rem;
+            }
+
+            .upload-area {
+                padding: 40px 20px;
+            }
+
+            .action-btn {
+                max-width: 100%;
+            }
+
+            h1 {
+                font-size: 1.8rem;
+            }
+        }
+
+        /* 滚动条美化 */
+        .file-list::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .file-list::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .file-list::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 10px;
+        }
+
+        .file-list::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        /* 动画 */
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(67, 56, 202, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(67, 56, 202, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(67, 56, 202, 0); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-toolbox"></i> 文件处理工具箱 Pro</h1>
+            <p class="subtitle">专业级本地文件处理解决方案 · 安全 · 高效 · 无云端上传</p>
+        </header>
+
+        <!-- Tab 标签栏 -->
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('merge')">
+                <i class="fas fa-layer-group"></i> 合并表格
+            </button>
+            <button class="tab-btn" onclick="switchTab('extract')">
+                <i class="fas fa-file-signature"></i> 提取文件名
+            </button>
+            <button class="tab-btn" onclick="switchTab('convert')">
+                <i class="fas fa-exchange-alt"></i> 格式转换
+            </button>
+        </div>
+
+        <!-- 功能1：合并表格 -->
+        <div id="merge" class="tab-content active">
+            <div class="upload-area pulse" id="dropAreaMerge">
+                <i class="fas fa-file-excel upload-icon"></i>
+                <h3 class="upload-text">拖拽多个 .xlsx 文件到这里</h3>
+                <p class="upload-subtext">或点击下方按钮选择文件 · 自动去重标题行</p>
+                <button class="browse-btn" onclick="document.getElementById('fileInputMerge').click()">
+                    <i class="fas fa-folder-open"></i> 浏览文件
+                </button>
+                <input type="file" id="fileInputMerge" class="file-input" multiple accept=".xlsx" />
+            </div>
+
+            <div class="file-list-container">
+                <h4 class="file-list-title"><i class="fas fa-list"></i> 已选择文件</h4>
+                <div id="fileListMerge" class="file-list">请上传 .xlsx 文件以开始</div>
+            </div>
+
+            <button id="mergeBtn" class="action-btn merge-btn" disabled>
+                <i class="fas fa-layer-group"></i> 合并并下载 merged.xlsx
+            </button>
+        </div>
+
+        <!-- 功能2：提取文件名 -->
+        <div id="extract" class="tab-content">
+            <div class="upload-area" id="dropArea1">
+                <i class="fas fa-file-excel upload-icon"></i>
+                <h3 class="upload-text">拖拽多个 .xlsx 文件到这里</h3>
+                <p class="upload-subtext">提取文件名并生成汇总表格</p>
+                <button class="browse-btn" onclick="document.getElementById('fileInput1').click()">
+                    <i class="fas fa-folder-open"></i> 浏览文件
+                </button>
+                <input type="file" id="fileInput1" class="file-input" multiple accept=".xlsx" />
+            </div>
+
+            <div class="file-list-container">
+                <h4 class="file-list-title"><i class="fas fa-list"></i> 已选择文件</h4>
+                <div id="fileList1" class="file-list">请上传 .xlsx 文件以开始</div>
+            </div>
+
+            <button id="generateBtn" class="action-btn extract-btn" disabled>
+                <i class="fas fa-file-download"></i> 生成并下载 output.xlsx
+            </button>
+        </div>
+
+        <!-- 功能3：XLSX 转 CSV -->
+        <div id="convert" class="tab-content">
+            <div class="upload-area" id="dropArea2">
+                <i class="fas fa-file-excel upload-icon"></i>
+                <h3 class="upload-text">拖拽多个 .xlsx 文件到这里</h3>
+                <p class="upload-subtext">批量转换为 CSV 并打包下载</p>
+                <button class="browse-btn" onclick="document.getElementById('fileInput2').click()">
+                    <i class="fas fa-folder-open"></i> 浏览文件
+                </button>
+                <input type="file" id="fileInput2" class="file-input" multiple accept=".xlsx" />
+            </div>
+
+            <div class="file-list-container">
+                <h4 class="file-list-title"><i class="fas fa-list"></i> 已选择文件</h4>
+                <div id="fileList2" class="file-list">请上传 .xlsx 文件以开始</div>
+            </div>
+
+            <button id="convertBtn" class="action-btn convert-btn" disabled>
+                <i class="fas fa-archive"></i> 转换并下载 ZIP
+            </button>
+        </div>
+    </div>
+
+    <!-- Toast 通知 -->
+    <div id="toast" class="toast">
+        <i class="fas fa-info-circle"></i>
+        <span id="toast-message">消息内容</span>
+    </div>
+
+    <script>
+        // Toast 通知函数
+        function showToast(message, type = 'info') {
+            const toast = document.getElementById('toast');
+            const messageEl = document.getElementById('toast-message');
+            const icon = toast.querySelector('i');
+
+            messageEl.textContent = message;
+            toast.className = 'toast ' + type;
+            toast.classList.add('show');
+
+            // 图标设置
+            if (type === 'success') {
+                icon.className = 'fas fa-check-circle';
+            } else if (type === 'error') {
+                icon.className = 'fas fa-exclamation-circle';
+            } else {
+                icon.className = 'fas fa-info-circle';
+            }
+
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        // ========== 通用拖拽处理函数 ==========
+        function setupDropZone(dropAreaId, fileInputId, fileListId) {
+            const dropArea = document.getElementById(dropAreaId);
+            const fileInput = document.getElementById(fileInputId);
+
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                dropArea.addEventListener(eventName, preventDefaults, false);
+            });
+
+            function preventDefaults(e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropArea.addEventListener(eventName, () => {
+                    dropArea.style.borderColor = '#4338ca';
+                    dropArea.style.background = 'linear-gradient(135deg, #e0e7ff 0%, #d1d9ff 100%)';
+                }, false);
+            });
+
+            ['dragleave', 'drop'].forEach(eventName => {
+                dropArea.addEventListener(eventName, () => {
+                    dropArea.style.borderColor = '';
+                    dropArea.style.background = '';
+                }, false);
+            });
+
+            dropArea.addEventListener('drop', (e) => {
+                const dt = e.dataTransfer;
+                const files = dt.files;
+                handleFiles(files, fileListId, fileInputId);
+            }, false);
+
+            fileInput.addEventListener('change', (e) => {
+                handleFiles(e.target.files, fileListId, fileInputId);
+            }, false);
+        }
+
+        function handleFiles(files, fileListId, fileInputId) {
+            const fileList = document.getElementById(fileListId);
+            let btnId, filesKey;
+
+            if (fileListId === 'fileListMerge') {
+                btnId = 'mergeBtn';
+                filesKey = 'selectedFilesMerge';
+            } else if (fileListId === 'fileList1') {
+                btnId = 'generateBtn';
+                filesKey = 'selectedFiles1';
+            } else {
+                btnId = 'convertBtn';
+                filesKey = 'selectedFiles2';
+            }
+
+            const selectedFiles = Array.from(files).filter(file => 
+                file.name.toLowerCase().endsWith('.xlsx')
+            );
+
+            window[filesKey] = selectedFiles;
+            updateFileList(fileList, selectedFiles);
+            document.getElementById(btnId).disabled = selectedFiles.length === 0;
+
+            if (selectedFiles.length > 0) {
+                showToast(`已选择 ${selectedFiles.length} 个文件`, 'info');
+            }
+        }
+
+        function updateFileList(fileList, files) {
+            if (files.length === 0) {
+                fileList.innerHTML = "请上传 .xlsx 文件以开始";
+                return;
+            }
+
+            fileList.innerHTML = "";
+            files.forEach(file => {
+                const div = document.createElement('div');
+                div.className = 'file-item';
+                div.innerHTML = `
+                    <i class="fas fa-file-excel file-icon"></i>
+                    <span>${file.name}</span>
+                `;
+                fileList.appendChild(div);
+            });
+        }
+
+        // ========== Tab 切换逻辑 ==========
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+
+            document.getElementById(tabName).classList.add('active');
+            document.querySelector(`.tab-btn[onclick="switchTab('${tabName}')"]`).classList.add('active');
+        }
+
+        // ========== 功能1：合并 XLSX 表格 ==========
+        document.getElementById('mergeBtn').addEventListener('click', async function() {
+            if (!window.selectedFilesMerge || window.selectedFilesMerge.length === 0) {
+                showToast('请先选择文件', 'error');
+                return;
+            }
+
+            this.disabled = true;
+            this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 合并中...';
+
+            try {
+                let allData = [];
+                let header = null;
+
+                for (let i = 0; i < window.selectedFilesMerge.length; i++) {
+                    const file = window.selectedFilesMerge[i];
+                    const arrayBuffer = await file.arrayBuffer();
+                    const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+                    const firstSheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[firstSheetName];
+
+                    const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+
+                    if (jsonData.length === 0) continue;
+
+                    if (i === 0) {
+                        header = jsonData[0];
+                        allData = jsonData;
+                    } else {
+                        const dataRows = jsonData.slice(1);
+                        allData = allData.concat(dataRows);
+                    }
+                }
+
+                if (allData.length === 0) {
+                    throw new Error("没有可合并的数据");
+                }
+
+                const ws = XLSX.utils.aoa_to_sheet(allData);
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, "合并数据");
+                XLSX.writeFile(wb, "merged.xlsx");
+
+                showToast(`✅ 成功合并 ${window.selectedFilesMerge.length} 个文件！`, 'success');
+            } catch (error) {
+                console.error("合并失败：", error);
+                showToast("❌ 合并失败：" + error.message, 'error');
+            } finally {
+                this.disabled = false;
+                this.innerHTML = '<i class="fas fa-layer-group"></i> 合并并下载 merged.xlsx';
+            }
+        });
+
+        // ========== 功能2：提取文件名 ==========
+        document.getElementById('generateBtn').addEventListener('click', function() {
+            if (!window.selectedFiles1 || window.selectedFiles1.length === 0) {
+                showToast('请先选择文件', 'error');
+                return;
+            }
+
+            this.disabled = true;
+            this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 生成中...';
+
+            try {
+                const names = window.selectedFiles1
+                    .map(file => file.name.replace(/\.xlsx$/i, ''))
+                    .sort((a, b) => a.localeCompare(b));
+
+                const ws_data = [
+                    ["文件名（不含扩展名）"],
+                    ...names.map(name => [name])
+                ];
+
+                const ws = XLSX.utils.aoa_to_sheet(ws_data);
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, "文件列表");
+                XLSX.writeFile(wb, "output.xlsx");
+
+                showToast(`✅ 成功生成包含 ${names.length} 个文件名的表格！`, 'success');
+            } catch (error) {
+                showToast("❌ 生成失败：" + error.message, 'error');
+            } finally {
+                this.disabled = false;
+                this.innerHTML = '<i class="fas fa-file-download"></i> 生成并下载 output.xlsx';
+            }
+        });
+
+        // ========== 功能3：XLSX 转 CSV ==========
+        document.getElementById('convertBtn').addEventListener('click', async function() {
+            if (!window.selectedFiles2 || window.selectedFiles2.length === 0) {
+                showToast('请先选择文件', 'error');
+                return;
+            }
+
+            this.disabled = true;
+            this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 转换中...';
+
+            try {
+                const zip = new JSZip();
+
+                for (const file of window.selectedFiles2) {
+                    const arrayBuffer = await file.arrayBuffer();
+                    const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+                    const firstSheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[firstSheetName];
+                    const csv = XLSX.utils.sheet_to_csv(worksheet);
+                    const csvFileName = file.name.replace(/\.xlsx$/i, '.csv');
+                    zip.file(csvFileName, csv);
+                }
+
+                const blob = await zip.generateAsync({ type: 'blob' });
+                saveAs(blob, "converted_csv_files.zip");
+
+                showToast(`✅ 成功转换 ${window.selectedFiles2.length} 个文件！`, 'success');
+            } catch (error) {
+                console.error("转换失败：", error);
+                showToast("❌ 转换失败：" + error.message, 'error');
+            } finally {
+                this.disabled = false;
+                this.innerHTML = '<i class="fas fa-archive"></i> 转换并下载 ZIP';
+            }
+        });
+
+        // ========== 初始化 ==========
+        window.selectedFilesMerge = [];
+        window.selectedFiles1 = [];
+        window.selectedFiles2 = [];
+
+        setupDropZone('dropAreaMerge', 'fileInputMerge', 'fileListMerge');
+        setupDropZone('dropArea1', 'fileInput1', 'fileList1');
+        setupDropZone('dropArea2', 'fileInput2', 'fileList2');
+
+        // 页面加载完成提示
+        window.addEventListener('load', () => {
+            showToast('✨ 文件处理工具箱已就绪！', 'info');
+        });
+    </script>
+</body>
+</html>
